@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="hy">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Արևային Կայանի Արտադրողականության Հաշվիչ</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for Visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .card-shadow {
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col justify-between">
+
+    <header class="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="p-3 bg-white/10 rounded-2xl backdrop-blur-md">
+                        <i class="fa-solid fa-solar-panel text-3xl text-amber-200"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Արտադրողականության Հաշվիչ</h1>
+                        <p class="text-amber-100 text-sm sm:text-base">Արևային էլեկտրակայանի տարեկան և ամսական արտադրանքի հաշվարկ</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-grow">
+        
+        <!-- Controls & Input Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Input Card -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-100 card-shadow space-y-6">
+                <div class="flex items-center space-x-2 border-b border-slate-100 pb-3">
+                    <i class="fa-solid fa-sliders text-amber-500 text-lg"></i>
+                    <h2 class="text-lg font-semibold text-slate-800">Մուտքային Տվյալներ</h2>
+                </div>
+
+                <!-- System Capacity -->
+                <div>
+                    <label for="capacity" class="block text-sm font-medium text-slate-700 mb-1">
+                        Կայանի հզորություն (կՎտ)
+                    </label>
+                    <div class="relative rounded-xl shadow-sm">
+                        <input type="number" id="capacity" value="11.4" step="0.1" min="0.1"
+                            class="w-full pl-4 pr-16 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-lg font-medium transition"
+                            oninput="calculateProductivity()">
+                        <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400 font-medium">
+                            կՎտ
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Specific Yield -->
+                <div>
+                    <label for="yield" class="block text-sm font-medium text-slate-700 mb-1">
+                        Տարեկան տեսակարար ելք (կՎտժ/կՎտ)
+                    </label>
+                    <div class="relative rounded-xl shadow-sm">
+                        <input type="number" id="yield" value="1220" step="10" min="100"
+                            class="w-full pl-4 pr-24 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-lg font-medium transition"
+                            oninput="calculateProductivity()">
+                        <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400 font-medium">
+                            կՎտժ/կՎտ
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">Հայաստանում միջին ցուցանիշը՝ ~1200 - 1500 կՎտժ/կՎտ</p>
+                </div>
+
+                <!-- Leap Year Toggle -->
+                <div class="pt-2 border-t border-slate-100">
+                    <label class="flex items-center space-x-3 cursor-pointer">
+                        <input type="checkbox" id="leapYear" class="w-5 h-5 text-amber-500 rounded border-slate-300 focus:ring-amber-500" onchange="calculateProductivity()">
+                        <span class="text-sm text-slate-600 font-medium">Նահանջ տարի (Փետրվար = 29 օր)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Total Annual Generation -->
+                <div class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-6 text-white shadow-lg flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-amber-100 font-medium text-sm">Տարեկան Արտադրողականություն</span>
+                            <i class="fa-solid fa-bolt text-2xl text-amber-200 opacity-80"></i>
+                        </div>
+                        <div class="text-3xl sm:text-4xl font-extrabold tracking-tight" id="totalAnnual">
+                            13,908 <span class="text-lg font-normal text-amber-100">կՎտժ</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-xs text-amber-100/80 bg-white/10 rounded-lg p-2.5 backdrop-blur-sm">
+                        <i class="fa-solid fa-circle-info mr-1"></i> Հաշվարկ՝ Հզորություն × Տեսակարար Ելք
+                    </div>
+                </div>
+
+                <!-- Peak Month -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-100 card-shadow flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-slate-500 font-medium text-sm">Առավելագույն Ամիս (Պիկ)</span>
+                            <div class="p-2 bg-amber-50 rounded-lg">
+                                <i class="fa-solid fa-sun text-amber-500"></i>
+                            </div>
+                        </div>
+                        <div class="text-2xl sm:text-3xl font-bold text-slate-800" id="peakMonth">
+                            Հուլիս
+                        </div>
+                        <div class="text-amber-600 font-semibold text-lg mt-1" id="peakMonthVal">
+                            1,813.6 կՎտժ (13.04%)
+                        </div>
+                    </div>
+                    <div class="text-xs text-slate-400 mt-2">
+                        Տարվա ամենաարտադրողական ամիսը
+                    </div>
+                </div>
+
+                <!-- Monthly Average -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-100 card-shadow flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-slate-500 font-medium text-sm">Միջին Ամսական</span>
+                            <div class="p-2 bg-blue-50 rounded-lg">
+                                <i class="fa-solid fa-calendar-days text-blue-500"></i>
+                            </div>
+                        </div>
+                        <div class="text-2xl sm:text-3xl font-bold text-slate-800" id="avgMonthly">
+                            1,159.0 <span class="text-base font-normal text-slate-500">կՎտժ</span>
+                        </div>
+                    </div>
+                    <div class="text-xs text-slate-400 mt-2">
+                        12 ամիսների միջինացված արդյունք
+                    </div>
+                </div>
+
+                <!-- Daily Average -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-100 card-shadow flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-slate-500 font-medium text-sm">Միջին Օրական</span>
+                            <div class="p-2 bg-emerald-50 rounded-lg">
+                                <i class="fa-solid fa-chart-line text-emerald-500"></i>
+                            </div>
+                        </div>
+                        <div class="text-2xl sm:text-3xl font-bold text-slate-800" id="avgDaily">
+                            38.1 <span class="text-base font-normal text-slate-500">կՎտժ/օր</span>
+                        </div>
+                    </div>
+                    <div class="text-xs text-slate-400 mt-2">
+                        Տարեկան կտրվածքով օրական միջին
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 border border-slate-100 card-shadow mb-8">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-chart-column text-amber-500 text-lg"></i>
+                    <h2 class="text-lg font-semibold text-slate-800">Ամսական Արտադրանքի Գրաֆիկ (կՎտժ)</h2>
+                </div>
+            </div>
+            <div class="relative h-72 sm:h-80 w-full">
+                <canvas id="monthlyChart"></canvas>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-100 card-shadow overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-table text-amber-500 text-lg"></i>
+                    <h2 class="text-lg font-semibold text-slate-800">Մանրամասն Հաշվարկային Աղյուսակ</h2>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-600 text-xs uppercase font-semibold tracking-wider border-b border-slate-200">
+                            <th class="py-3.5 px-6">Ամիս</th>
+                            <th class="py-3.5 px-6 text-center">Մասնաբաժին (%)</th>
+                            <th class="py-3.5 px-6 text-right">Ամսական (կՎտժ)</th>
+                            <th class="py-3.5 px-6 text-center">Օրերի քանակ</th>
+                            <th class="py-3.5 px-6 text-right">Օրական (կՎտժ/օր)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-100 text-sm font-medium text-slate-700">
+                        <!-- Dynamic Rows -->
+                    </tbody>
+                    <tfoot>
+                        <tr class="bg-amber-50/60 font-bold text-slate-800 text-sm border-t-2 border-amber-200">
+                            <td class="py-4 px-6">Ընդամենը (Տարեկան)</td>
+                            <td class="py-4 px-6 text-center" id="totalShare">100.00%</td>
+                            <td class="py-4 px-6 text-right text-amber-600 text-base" id="tableTotalAnnual">0.0</td>
+                            <td class="py-4 px-6 text-center" id="totalDays">365</td>
+                            <td class="py-4 px-6 text-right" id="totalAvgDaily">0.0</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 py-6 border-t border-slate-800 mt-12">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs sm:text-sm">
+            <p>© 2026 Արևային Էներգիայի Արտադրողականության Հաշվիչ. Բոլոր իրավունքները պաշտպանված են:</p>
+        </div>
+    </footer>
+
+    <script>
+        // Data Configuration
+        const monthNames = [
+            'Հունվար', 'Փետրվար', 'Մարտ', 'Ապրիլ', 'Մայիս', 'Հունիս',
+            'Հուլիս', 'Օգոստոս', 'Սեպտեմբեր', 'Հոկտեմբեր', 'Նոյեմբեր', 'Դեկտեմբեր'
+        ];
+
+        const coefficients = [
+            0.0319, // Jan
+            0.0435, // Feb
+            0.0773, // Mar
+            0.1014, // Apr
+            0.1159, // May
+            0.1256, // Jun
+            0.1304, // Jul
+            0.1237, // Aug
+            0.1014, // Sep
+            0.0725, // Oct
+            0.0435, // Nov
+            0.0329  // Dec
+        ];
+
+        let baseDaysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        let chartInstance = null;
+
+        // Initialize Chart.js
+        function initChart() {
+            const ctx = document.getElementById('monthlyChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: monthNames,
+                    datasets: [{
+                        label: 'Արտադրանք (կՎտժ)',
+                        data: [],
+                        backgroundColor: function(context) {
+                            const index = context.dataIndex;
+                            // Highlight July/Summer months with warmer gradients/colors
+                            if (index === 6) return '#f59e0b'; // Peak Jul
+                            if (index >= 4 && index <= 7) return '#fbbf24'; // Summer/Spring
+                            return '#38bdf8'; // Standard blue
+                        },
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y.toLocaleString('hy-AM', { maximumFractionDigits: 1 }) + ' կՎտժ';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#f1f5f9' },
+                            ticks: {
+                                font: { family: 'Inter' },
+                                callback: function(value) {
+                                    return value.toLocaleString();
+                                }
+                            }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { family: 'Inter' } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Calculation Engine
+        function calculateProductivity() {
+            const capacity = parseFloat(document.getElementById('capacity').value) || 0;
+            const yieldValue = parseFloat(document.getElementById('yield').value) || 0;
+            const isLeapYear = document.getElementById('leapYear').checked;
+
+            // Total Annual Output
+            const annualOutput = capacity * yieldValue;
+
+            // Days setup
+            const daysInMonth = [...baseDaysInMonth];
+            if (isLeapYear) daysInMonth[1] = 29;
+
+            const totalDaysYear = daysInMonth.reduce((a, b) => a + b, 0);
+
+            // Table Body & Calculations
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+
+            let chartData = [];
+            let maxVal = -1;
+            let peakMonthName = '';
+            let peakMonthShare = 0;
+
+            coefficients.forEach((coeff, index) => {
+                const monthlyKwh = annualOutput * coeff;
+                const dailyKwh = monthlyKwh / daysInMonth[index];
+
+                chartData.push(monthlyKwh);
+
+                // Track Peak Month
+                if (monthlyKwh > maxVal) {
+                    maxVal = monthlyKwh;
+                    peakMonthName = monthNames[index];
+                    peakMonthShare = (coeff * 100).toFixed(2);
+                }
+
+                // Append Table Row
+                const row = document.createElement('tr');
+                row.className = "hover:bg-slate-50 transition";
+                row.innerHTML = `
+                    <td class="py-3 px-6 font-semibold">${monthNames[index]}</td>
+                    <td class="py-3 px-6 text-center text-slate-500">${(coeff * 100).toFixed(2)}%</td>
+                    <td class="py-3 px-6 text-right font-medium text-slate-800">${monthlyKwh.toLocaleString('hy-AM', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
+                    <td class="py-3 px-6 text-center text-slate-400">${daysInMonth[index]}</td>
+                    <td class="py-3 px-6 text-right font-medium text-emerald-600">${dailyKwh.toLocaleString('hy-AM', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            // Update KPI Cards
+            document.getElementById('totalAnnual').innerHTML = `${annualOutput.toLocaleString('hy-AM', { maximumFractionDigits: 0 })} <span class="text-lg font-normal text-amber-100">կՎտժ</span>`;
+            document.getElementById('peakMonth').innerText = peakMonthName;
+            document.getElementById('peakMonthVal').innerText = `${maxVal.toLocaleString('hy-AM', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} կՎտժ (${peakMonthShare}%)`;
+            document.getElementById('avgMonthly').innerHTML = `${(annualOutput / 12).toLocaleString('hy-AM', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} <span class="text-base font-normal text-slate-500">կՎտժ</span>`;
+            document.getElementById('avgDaily').innerHTML = `${(annualOutput / totalDaysYear).toLocaleString('hy-AM', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} <span class="text-base font-normal text-slate-500">կՎտժ/օր</span>`;
+
+            // Update Table Summary Footer
+            document.getElementById('tableTotalAnnual').innerText = annualOutput.toLocaleString('hy-AM', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+            document.getElementById('totalDays').innerText = totalDaysYear;
+            document.getElementById('totalAvgDaily').innerText = (annualOutput / totalDaysYear).toLocaleString('hy-AM', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+            // Update Chart
+            if (chartInstance) {
+                chartInstance.data.datasets[0].data = chartData;
+                chartInstance.update();
+            }
+        }
+
+        // On Load Init
+        window.onload = function() {
+            initChart();
+            calculateProductivity();
+        };
+    </script>
+</body>
+</html>
